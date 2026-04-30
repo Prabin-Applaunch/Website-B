@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Website B</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: #f4f4f5;
+      color: #18181b;
+      min-height: 100vh;
+    }
+    .topbar {
+      background: #18181b;
+      color: #fafafa;
+      display: flex;
+      align-items: stretch;
+      padding: 0 16px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    }
+    .tabs {
+      display: flex;
+      gap: 0;
+    }
+    .tab {
+      appearance: none;
+      background: transparent;
+      border: none;
+      color: #a1a1aa;
+      font-size: 1rem;
+      padding: 16px 20px;
+      cursor: pointer;
+      font-weight: 500;
+      border-bottom: 3px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .tab:hover {
+      color: #e4e4e7;
+    }
+    .tab.active {
+      color: #fff;
+      font-weight: 700;
+      border-bottom-color: #3b82f6;
+    }
+    main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 32px 20px;
+    }
+    .panel {
+      background: #fff;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    }
+    .status {
+      margin: 16px 0;
+      color: #52525b;
+    }
+    .status.error {
+      color: #dc2626;
+      font-weight: 600;
+    }
+    .iframe-wrap {
+      margin-top: 20px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #e4e4e7;
+    }
+    .iframe-wrap iframe {
+      display: block;
+      width: 100%;
+      height: 700px;
+      border: none;
+    }
+    .cta {
+      margin-top: 16px;
+    }
+    .cta button {
+      display: inline-block;
+      background: #2563eb;
+      color: #fff;
+      text-decoration: none;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 12px 20px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .cta button:hover {
+      background: #1d4ed8;
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="tabs" role="tablist" aria-label="Main">
+      <button type="button" class="tab active" id="tab-home" role="tab" aria-selected="true" data-tab="home">
+        Home
+      </button>
+      <button type="button" class="tab" id="tab-mri" role="tab" aria-selected="false" data-tab="mri">
+        MRI
+      </button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="panel-home" class="panel" role="tabpanel" aria-labelledby="tab-home">
+      <p style="font-size: 1.25rem; margin: 0;">Welcome to Website B</p>
+    </section>
+
+    <section id="panel-mri" class="panel" hidden role="tabpanel" aria-labelledby="tab-mri">
+      <div id="mri-status" class="status"></div>
+      <div id="mri-error" class="status error" hidden>API Failed</div>
+      <div id="mri-success" hidden>
+        <p class="status" style="margin-top: 0;">Session initialized.</p>
+        <div class="cta">
+          <button type="button" id="go-mri">Go to MRI Site</button>
+        </div>
+        <div class="iframe-wrap">
+          <iframe
+            src="https://dev.mri-essentials.com"
+            width="100%"
+            height="700"
+            style="border:none;"
+            title="MRI Essentials"
+          ></iframe>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      const tabHome = document.getElementById('tab-home')
+      const tabMri = document.getElementById('tab-mri')
+      const panelHome = document.getElementById('panel-home')
+      const panelMri = document.getElementById('panel-mri')
+      const mriStatus = document.getElementById('mri-status')
+      const mriError = document.getElementById('mri-error')
+      const mriSuccess = document.getElementById('mri-success')
+
+      function setTab (active) {
+        const isHome = active === 'home'
+        tabHome.classList.toggle('active', isHome)
+        tabHome.setAttribute('aria-selected', isHome)
+        tabMri.classList.toggle('active', !isHome)
+        tabMri.setAttribute('aria-selected', !isHome)
+        panelHome.hidden = !isHome
+        panelMri.hidden = isHome
+      }
+
+      async function initMriSession () {
+        mriError.hidden = true
+        mriSuccess.hidden = true
+        mriStatus.textContent = 'Initializing session...'
+        mriStatus.classList.remove('error')
+
+        try {
+          const response = await fetch('/api/init-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+          })
+          const data = await response.json().catch(function () {
+            return { _parseError: true }
+          })
+          console.log('init-session response', { status: response.status, body: data })
+
+          if (!response.ok) {
+            mriStatus.textContent = ''
+            mriError.hidden = false
+            return
+          }
+
+          mriStatus.textContent = ''
+          mriSuccess.hidden = false
+        } catch (err) {
+          console.error('init-session request failed', err)
+          mriStatus.textContent = ''
+          mriError.hidden = false
+        }
+      }
+
+      tabHome.addEventListener('click', function () {
+        setTab('home')
+      })
+
+      tabMri.addEventListener('click', function () {
+        setTab('mri')
+        initMriSession()
+      })
+
+      document.getElementById('go-mri').addEventListener('click', function () {
+        window.location.href = 'https://dev.mri-essentials.com'
+      })
+    })()
+  </script>
+</body>
+</html>
