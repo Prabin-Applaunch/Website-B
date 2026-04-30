@@ -96,6 +96,21 @@
       color: #52525b;
       font-size: 1rem;
     }
+    .iframe-wrap {
+      margin-top: 0;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #e4e4e7;
+    }
+    .iframe-wrap[hidden] {
+      display: none !important;
+    }
+    .iframe-wrap iframe {
+      display: block;
+      width: 100%;
+      height: 700px;
+      border: none;
+    }
   </style>
 </head>
 <body>
@@ -121,6 +136,16 @@
         <p class="loader-text">Initializing session...</p>
       </div>
       <div id="mri-error" class="status error" hidden>API Failed</div>
+      <div id="mri-frame-wrap" class="iframe-wrap" hidden>
+        <iframe
+          id="mri-frame"
+          src="about:blank"
+          width="100%"
+          height="700"
+          style="border:none;"
+          title="MRI Essentials"
+        ></iframe>
+      </div>
     </section>
   </main>
 
@@ -132,6 +157,8 @@
       const panelMri = document.getElementById('panel-mri')
       const mriLoader = document.getElementById('mri-loader')
       const mriError = document.getElementById('mri-error')
+      const mriFrameWrap = document.getElementById('mri-frame-wrap')
+      const mriFrame = document.getElementById('mri-frame')
       const MRI_SITE = 'https://dev.mri-essentials.com'
 
       function setTab (active) {
@@ -146,6 +173,7 @@
 
       async function initMriSession () {
         mriError.hidden = true
+        mriFrameWrap.hidden = true
         mriLoader.hidden = false
 
         try {
@@ -174,7 +202,13 @@
           }
 
           const target = `${MRI_SITE}?code=${encodeURIComponent(code)}`
-          window.location.href = target
+          const onFrameLoad = function () {
+            mriFrame.removeEventListener('load', onFrameLoad)
+            mriLoader.hidden = true
+            mriFrameWrap.hidden = false
+          }
+          mriFrame.addEventListener('load', onFrameLoad)
+          mriFrame.src = target
         } catch (err) {
           console.error('init-session request failed', err)
           mriLoader.hidden = true
